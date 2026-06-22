@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#SBATCH -J DADA2
+#SBATCH --account=youraccount
+#SBATCH --partition=normal_q
+#SBATCH --time=0-24:00:00
+#SBATCH --mem=16G
+#SBATCH --cpus-per-task=8
+#SBATCH --mail-user=youremail
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+module load Miniconda3
+source /yourfilepath/conda.sh
+conda activate qiime2-amplicon-2025.7
+
+qiime dada2 denoise-paired --i-demultiplexed-seqs /yourfilepath/GW-SW-data.qza --p-trunc-len-f 0 --p-trunc-len-r 240 --o-representative-sequences /yourfilepath/sequences.qza --o-table /yourfilepath/table.qza --o-denoising-stats /yourfilepath/denoising_stats.qzv --p-n-threads 8 --verbose &> /yourfilepath/dada2_log.txt

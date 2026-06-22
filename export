@@ -1,0 +1,55 @@
+#!/bin/bash
+#SBATCH -J Export
+#SBATCH --account=youraccount
+#SBATCH --partition=normal_q
+#SBATCH --time=0-04:00:00
+#SBATCH --mem=20G
+#SBATCH --mail-user=youremail
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+#This script exports your classified sequences from domain down to genus level.
+
+module load Miniconda3
+source /yourfilepath/conda.sh
+conda activate qiime2-amplicon-2025.7
+
+# Export feature table and taxonomy
+qiime tools export --input-path /yourfilepath/feature-frequency-filtered-table.qza --output-path /yourfilepath/exported
+
+qiime tools export --input-path /yourfilepath/updated_taxonomy.qza --output-path /yourfilepath/exported
+
+# Fix taxonomy header and add to biom
+sed -i '1s/.*/\#OTUID\ttaxonomy\tconfidence/' /yourfilepath/exported/taxonomy.tsv
+cp /yourfilepath/exported/taxonomy.tsv /yourfilepath/exported/biom-taxonomy.tsv
+
+biom add-metadata -i /yourfilepath/exported/feature-table.biom -o /yourfilepath/exported/table-with-taxonomy.biom --observation-metadata-fp /yourfilepath/exported/biom-taxonomy.tsv --sc-separated taxonomy
+
+# Level 1 - Domain
+qiime taxa collapse --i-table /yourfilepath/feature-frequency-filtered-table.qza --i-taxonomy /yourfilepath/updated_taxonomy.qza --p-level 1 --o-collapsed-table /yourfilepath/level1-table.qza
+qiime tools export --input-path /yourfilepath/level1-table.qza --output-path /yourfilepath/exported_level1
+biom convert -i /yourfilepath/exported_level1/feature-table.biom -o /yourfilepath/exported_level1/level1-table.tsv --to-tsv
+
+# Level 2 - Phylum
+qiime taxa collapse --i-table /yourfilepath/feature-frequency-filtered-table.qza --i-taxonomy /yourfilepath/updated_taxonomy.qza --p-level 2 --o-collapsed-table /yourfilepath/level2-table.qza
+qiime tools export --input-path /yourfilepath/level2-table.qza --output-path /yourfilepath/exported_level2
+biom convert -i /yourfilepath/exported_level2/feature-table.biom -o /yourfilepath/exported_level2/level2-table.tsv --to-tsv
+
+# Level 3 - Class
+qiime taxa collapse --i-table /yourfilepath/feature-frequency-filtered-table.qza --i-taxonomy /yourfilepath/updated_taxonomy.qza --p-level 3 --o-collapsed-table /yourfilepath/level3-table.qza
+qiime tools export --input-path /yourfilepath/level3-table.qza --output-path /yourfilepath/exported_level3
+biom convert -i /yourfilepath/exported_level3/feature-table.biom -o /yourfilepath/exported_level3/level3-table.tsv --to-tsv
+
+# Level 4 - Order
+qiime taxa collapse --i-table /yourfilepath/feature-frequency-filtered-table.qza --i-taxonomy /yourfilepath/updated_taxonomy.qza --p-level 4 --o-collapsed-table /yourfilepath/level4-table.qza
+qiime tools export --input-path /yourfilepath/level4-table.qza --output-path /yourfilepath/exported_level4
+biom convert -i /yourfilepath/exported_level4/feature-table.biom -o /yourfilepath/exported_level4/level4-table.tsv --to-tsv
+
+# Level 5 - Family
+qiime taxa collapse --i-table /yourfilepath/feature-frequency-filtered-table.qza --i-taxonomy /yourfilepath/updated_taxonomy.qza --p-level 5 --o-collapsed-table /yourfilepath/level5-table.qza
+qiime tools export --input-path /yourfilepath/level5-table.qza --output-path /yourfilepath/exported_level5
+biom convert -i /yourfilepath/exported_level5/feature-table.biom -o /yourfilepath/exported_level5/level5-table.tsv --to-tsv
+
+# Level 6 - Genus
+qiime taxa collapse --i-table /yourfilepath/feature-frequency-filtered-table.qza --i-taxonomy /yourfilepath/updated_taxonomy.qza --p-level 6 --o-collapsed-table /yourfilepath/level6-table.qza
+qiime tools export --input-path /yourfilepath/level6-table.qza --output-path /yourfilepath/exported_level6
+biom convert -i /yourfilepath/exported_level6/feature-table.biom -o /yourfilepath/exported_level6/level6-table.tsv --to-tsv

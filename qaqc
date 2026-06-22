@@ -1,5 +1,3 @@
-#This script performs QAQC on your raw sequence files. 
-
 #!/bin/bash
 
 #SBATCH -J QA/QC
@@ -15,6 +13,8 @@
 #SBATCH --mail-user=youremail
 
 #SBATCH --mail-type=BEGIN,END,FAIL
+
+#This script performs QAQC on your raw sequence files. 
 
 module load Miniconda3
 source /yourfilepath/conda.sh

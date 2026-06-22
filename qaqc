@@ -1,0 +1,31 @@
+#This script performs QAQC on your raw sequence files. 
+
+#!/bin/bash
+
+#SBATCH -J QA/QC
+
+#SBATCH --account=your account
+
+#SBATCH --partition=normal_q
+
+#SBATCH --time=0-08:00:00
+
+#SBATCH --mem=2G
+
+#SBATCH --mail-user=youremail
+
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+module load Miniconda3
+source /yourfilepath/conda.sh
+conda activate qiime2-amplicon-2025.7
+
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path /yourfilepath/manifest-dk.tsv \
+  --output-path /yourfilepath/GW-SW-data.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+
+qiime demux summarize \
+  --i-data /yourfilepath/GW-SW-data.qza \
+  --o-visualization /yourfilepath/GW-SW-qualityplot.qzv

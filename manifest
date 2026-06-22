@@ -1,0 +1,14 @@
+#This script cleans up the formatting of the manifest file so it can be utilized correctly in the rest of the workflow.
+#Start by uploading your manifest file ("manifest-dk.tsv") to the folder in ARC that you will call it from.
+
+#Check formatting of the manifest file (“^I” is a tab, “$” is the end of the line).
+Head -5 manifest-dk.tsv | cat -A
+
+#Convert all spaces into a single tab.
+sed -i 's/[[:space:]]\+/\t/g' /yourfilepath/manifest-dk.tsv
+
+#Remove any Windows-style carriage returns.
+sed -i 's/\r//g' /home/dakirr/Mn-Microcosms/manifest-dk.tsv
+
+#Check formatting of the manifest file again (“^I” is a tab - should replace all spaces, “$” is the end of the line).
+Head -5 manifest-dk.tsv | cat -A

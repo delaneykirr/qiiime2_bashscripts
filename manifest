@@ -1,5 +1,6 @@
 #This script cleans up the formatting of the manifest file so it can be utilized correctly in the rest of the workflow.
 #Start by uploading your manifest file ("manifest-dk.tsv") to the folder in ARC that you will call it from.
+#Then run the following as single lines in the terminal.
 
 #Check formatting of the manifest file (“^I” is a tab, “$” is the end of the line).
 Head -5 manifest-dk.tsv | cat -A

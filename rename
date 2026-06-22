@@ -1,0 +1,104 @@
+#!/bin/bash
+
+#SBATCH -J Rename_Features
+
+#SBATCH --account=youraccount
+
+#SBATCH --partition=normal_q
+
+#SBATCH --time=0-02:00:00
+
+#SBATCH --mem=10G
+
+#SBATCH --mail-user=youremail
+
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+
+#This script renames feature IDs
+
+
+module load Miniconda3
+
+source /yourfilepath/conda.sh
+
+conda activate qiime2-amplicon-2025.7
+
+
+EXPORT_DIR="/yourfilepath/exported"
+
+INPUT_FASTA="$EXPORT_DIR/dna-sequences.fasta"
+
+OUTPUT_FASTA="/yourfilepath/renamed-seqs.fasta"
+
+
+
+# Export the rep seqs
+
+echo "Exporting representative sequences..."
+
+qiime tools export --input-path /yourfilepath/rep_seqs_97.qza --output-path $EXPORT_DIR
+
+
+
+# Check if FASTA was exported
+
+if [[ ! -f "$INPUT_FASTA" ]]; then
+
+  echo "Error: FASTA file not found at $INPUT_FASTA"
+
+  exit 1
+
+fi
+
+
+
+# Rename FASTA headers to OTU1, OTU2, etc.
+
+echo "Renaming headers to OTU1, OTU2, ..."
+
+awk '/^>/{print ">OTU" ++i; next}{print}' "$INPUT_FASTA" > "$OUTPUT_FASTA"
+
+echo "FASTA renaming complete. Output: $OUTPUT_FASTA"
+
+
+
+# Create a mapping file of old ID -> new ID for updating tables
+
+echo "Creating ID mapping file..."
+
+paste <(grep "^>" "$INPUT_FASTA" | sed 's/>//') <(grep "^>" "$OUTPUT_FASTA" | sed 's/>//') > /yourfilepath/feature-id-map.tsv
+
+echo "ID mapping saved to feature-id-map.tsv"
+
+
+
+# Update feature IDs in each exported TSV table
+
+echo "Updating feature IDs in exported tables..."
+
+for LEVEL in 1 2 3 4 5 6; do
+
+  TSV="/yourfilepath/exported_level${LEVEL}/level${LEVEL}-table.tsv"
+
+  if [[ -f "$TSV" ]]; then
+
+    echo "Updating $TSV..."
+
+    awk 'NR==FNR{map[$1]=$2; next} {for(old in map) gsub(old, map[old]); print}' \
+
+      /yourfilepath/feature-id-map.tsv "$TSV" > "${TSV%.tsv}-renamed.tsv"
+
+    echo "Done: ${TSV%.tsv}-renamed.tsv"
+
+  else
+
+    echo "Warning: $TSV not found, skipping..."
+
+  fi
+
+done
+
+
+
+echo "All done! Renamed tables are in your exported_level* directories."

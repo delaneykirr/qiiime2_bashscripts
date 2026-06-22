@@ -1,0 +1,107 @@
+#!/bin/bash
+
+#SBATCH -J Classifying
+
+#SBATCH --account=youraccount
+
+#SBATCH --partition=normal_q
+
+#SBATCH --time=0-20:00:00
+
+#SBATCH --mem=20G
+
+#SBATCH --mail-user=youremail
+
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+#This script uses the greengenes2 database (McDonald, D., Jiang, Y., Balaban, M., Cantrell, K., Zhu, Q., Gonzalez, A., Morton, J.T., Nicolaou, G., Parks, D.H., Karst, S.M., Albertsen, M., Hugenholtz, P., DeSantis, T., 
+#Song, S.J., Bartko, A., Havulinna, A.S., Jousilahti, P., Cheng, S., Inouye, M., Niiranen, T., Jain, M., Salomaa, V., Lahti, L., Mirarab, S., and Knight, R., 2024, Greengenes2 unifies microbial data in a single reference tree: Nature Biotechnology, v. 42, p. 715–718, 
+#doi:10.1038/s41587-023-01845-1.) to classify the sequences. 
+
+# Load conda and activate the environment
+
+module load Miniconda3
+
+source /yourfilepath/conda.sh
+
+conda activate qiime2-amplicon-2025.7
+
+
+
+# Step 1: Cluster features de novo
+
+qiime vsearch cluster-features-de-novo \
+
+  --i-sequences /yourfilepath/sequences.qza \
+
+  --i-table /yourfilepath/table.qza \
+
+  --p-perc-identity 0.97 \
+
+  --o-clustered-table /yourfilepath/table_97.qza \
+
+  --o-clustered-sequences /yourfilepath/rep_seqs_97.qza
+
+
+
+# Step 2: Classify sequences with Greengenes2 full-length classifier
+
+qiime feature-classifier classify-sklearn \
+
+  --i-reads /yourfilepath/rep_seqs_97.qza \
+
+  --i-classifier /yourfilepath/2024.09.backbone.full-length.nb.qza \
+
+  --o-classification /yourfilepath/updated_taxonomy.qza \
+
+  --p-n-jobs 4
+
+
+
+# Step 3: Tabulate metadata
+
+qiime metadata tabulate \
+
+  --m-input-file /yourfilepath/updated_taxonomy.qza \
+
+  --o-visualization /yourfilepath/taxa-meta.qzv
+
+
+
+# Step 4: Filter table by taxonomy
+
+qiime taxa filter-table \
+
+  --i-table /yourfilepath/table_97.qza \
+
+  --i-taxonomy /yourfilepath/updated_taxonomy.qza \
+
+  --p-exclude mitochondria,chloroplast \
+
+  --o-filtered-table /yourfilepath/tax-class-filter-table.qza
+
+
+
+# Step 5: Remove singletons
+
+qiime feature-table filter-features \
+
+  --i-table /yourfilepath/tax-class-filter-table.qza \
+
+  --p-min-frequency 2 \
+
+  --o-filtered-table /yourfilepath/feature-frequency-filtered-table.qza
+
+
+
+# Step 6: Generate bar plots
+
+qiime taxa barplot \
+
+  --i-table /yourfilepath/feature-frequency-filtered-table.qza \
+
+  --i-taxonomy /yourfilepath/updated_taxonomy.qza \
+
+  --m-metadata-file /yourfilepath/GW-SW-manifest.tsv.txt \
+
+  --o-visualization /yourfilepath/taxa-barplot.qzv

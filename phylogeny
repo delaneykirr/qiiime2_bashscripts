@@ -1,0 +1,47 @@
+#!/bin/bash
+
+#SBATCH -J Phylogeny
+
+#SBATCH --account=youraccount
+
+#SBATCH --partition=normal_q
+
+#SBATCH --time=0-20:00:00
+
+#SBATCH --mem=20G
+
+#SBATCH --mail-user=youremail
+
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+#This script performs phylogenetic tree analysis for downstream beta diversity calculations. 
+
+module load Miniconda3
+
+source /yourfilepath/conda.sh
+
+conda activate qiime2-amplicon-2025.7
+
+# Align
+
+qiime alignment mafft --i-sequences /yourfilepath/rep_seqs_97.qza --o-alignment /yourfilepath/aligned-rep-seqs.qza
+
+# Mask (remove highly variable positions)
+
+qiime alignment mask --i-alignment /yourfilepath/aligned-rep-seqs.qza --o-masked-alignment /yourfilepath/masked-aligned-rep-seqs.qza
+
+# Build Tree
+
+qiime phylogeny fasttree --i-alignment /yourfilepath/masked-aligned-rep-seqs.qza --o-tree /yourfilepath/unrooted-tree.qza
+
+# Root the Tree
+
+qiime phylogeny midpoint-root --i-tree /yourfilepath/unrooted-tree.qza --o-rooted-tree /yourfilepath/rooted-tree.qza
+
+#sampling depth is the minimum amount of reads from a given sample
+
+qiime diversity core-metrics-phylogenetic --i-phylogeny /yourfilepath/rooted-tree.qza --i-table /yourfilepath/feature-frequency-filtered-table.qza --p-sampling-depth 1000 --m-metadata-file /yourfilepath/GW-SW-metadata.tsv --output-dir /yourfilepath/core-metrics-results
+
+qiime diversity alpha-group-significance --i-alpha-diversity /yourfilepath/core-metrics-results/faith_pd_vector.qza --m-metadata-file /yourfilepath/GW-SW-metadata.tsv --o-visualization /yourfilepath/core-metrics-results/faith-pd-group-significance.qzv
+
+qiime diversity alpha-group-significance --i-alpha-diversity /yourfilepath/core-metrics-results/evenness_vector.qza --m-metadata-file /yourfilepath/GW-SW-metadata.tsv --o-visualization /yourfilepath/core-metrics-results/evenness-group-significance.qzv
